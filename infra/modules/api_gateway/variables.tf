@@ -44,3 +44,9 @@ variable "lambda_registration_invoke_arn" {
   type        = string
   description = "ARN de invocação da Lambda Registration"
 }
+
+variable "authorizer_name" {
+  type        = string
+  description = "Nome do authorizer customizado"
+  default     = "nexTimeFood-authorizer"
+}
