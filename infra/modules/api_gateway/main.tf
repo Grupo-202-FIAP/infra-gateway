@@ -33,7 +33,7 @@ resource "aws_apigatewayv2_integration" "lambda_registration" {
 # 4️⃣ Authorizer customizado (REQUEST)
 # =========================
 resource "aws_apigatewayv2_authorizer" "this" {
-  name                              = "nexTimeFood-authorizer"
+  name                              = var.authorizer_name
   api_id                            = aws_apigatewayv2_api.this.id
   authorizer_type                   = "REQUEST"
   authorizer_uri                    = var.lambda_authorizer_invoke_arn
