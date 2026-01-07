@@ -46,24 +46,15 @@ resource "aws_apigatewayv2_authorizer" "this" {
 # =========================
 resource "aws_apigatewayv2_route" "public_routes" {
   for_each = {
-    "POST /auth/login"    = "auth_login"
-    "POST /auth/register" = "auth_register"
-    "GET /swagger-ui"     = "swagger_ui"
-    "GET /actuator"       = "actuator"
+    "POST /auth/login"    = aws_apigatewayv2_integration.lambda_authorizer.id
+    "POST /auth/register" = aws_apigatewayv2_integration.lambda_registration.id
+    "GET /swagger-ui"     = aws_apigatewayv2_integration.lambda_registration.id
+    "GET /actuator"       = aws_apigatewayv2_integration.lambda_registration.id
   }
 
   api_id    = aws_apigatewayv2_api.this.id
   route_key = each.key
-
-  # target = "integrations/${lookup(
-  #   {
-  #     "POST /auth/login"    = aws_apigatewayv2_integration.lambda_authorizer.id
-  #     "POST /auth/register" = aws_apigatewayv2_integration.lambda_registration.id
-  #     "GET /swagger-ui"     = aws_apigatewayv2_integration.lambda_registration.id
-  #     "GET /actuator"       = aws_apigatewayv2_integration.lambda_registration.id
-  #   },
-  #   each.key
-  # )}"
+  target    = "integrations/${each.value}"
 
   authorization_type = "NONE"
 }
