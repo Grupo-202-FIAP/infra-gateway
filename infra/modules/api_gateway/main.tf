@@ -60,35 +60,80 @@ resource "aws_apigatewayv2_route" "public_routes" {
 }
 
 # =========================
-# 6️⃣ Rotas protegidas (EKS)
+# 6️⃣ Integração HTTP com ALB do EKS
 # =========================
-# resource "aws_apigatewayv2_route" "protected_routes" {
-#   for_each = {
-#     "GET /product"    = "product_get"
-#     "POST /product"   = "product_post"
-#     "PUT /product"    = "product_put"
-#     "DELETE /product" = "product_delete"
+resource "aws_apigatewayv2_integration" "eks_backend" {
+  count = var.eks_alb_dns_name != "" ? 1 : 0
 
-#     "GET /order"  = "order_get"
-#     "POST /order" = "order_post"
-
-#     "GET /customer"  = "customer_get"
-#     "POST /customer" = "customer_post"
-
-#     "GET /payment"  = "payment_get"
-#     "POST /payment" = "payment_post"
-#   }
-
-#   api_id    = aws_apigatewayv2_api.this.id
-#   route_key = each.key
-#   target    = "integrations/${var.eks_backend_integration_id}" # precisa passar o ID do integration do EKS
-
-#   authorizer_id      = aws_apigatewayv2_authorizer.this.id
-#   authorization_type = "CUSTOM"
-# }
+  api_id           = aws_apigatewayv2_api.this.id
+  integration_type = "HTTP_PROXY"
+  integration_uri  = "http://${var.eks_alb_dns_name}"
+  integration_method = "ANY"
+  
+  connection_type = "INTERNET"
+  
+  # Preserva o path e query string original
+  request_parameters = {
+    "overwrite:path" = "$request.path"
+  }
+}
 
 # =========================
-# 7️⃣ Stage
+# 7️⃣ Rotas protegidas (EKS) - ms-production
+# =========================
+resource "aws_apigatewayv2_route" "production_routes" {
+  for_each = var.eks_alb_dns_name != "" ? {
+    "GET /order"                    = "Lista pedidos de produção"
+    "PUT /order/{orderId}/complete" = "Completa pedido"
+    "PUT /order/{orderId}/ready"    = "Marca pedido como pronto"
+  } : {}
+
+  api_id    = aws_apigatewayv2_api.this.id
+  route_key = each.key
+  target    = "integrations/${aws_apigatewayv2_integration.eks_backend[0].id}"
+
+  authorizer_id      = aws_apigatewayv2_authorizer.this.id
+  authorization_type = "CUSTOM"
+}
+
+# =========================
+# 8️⃣ Rotas protegidas (EKS) - ms-order
+# =========================
+resource "aws_apigatewayv2_route" "order_routes" {
+  for_each = var.eks_alb_dns_name != "" ? {
+    "POST /api/order/create" = "Cria novo pedido"
+    "GET /api/order"         = "Lista todos os pedidos"
+    "GET /api/order/status"  = "Lista pedidos por status"
+    "GET /api/event/filter"  = "Busca evento por filtros"
+    "GET /api/event/all"     = "Lista todos os eventos"
+  } : {}
+
+  api_id    = aws_apigatewayv2_api.this.id
+  route_key = each.key
+  target    = "integrations/${aws_apigatewayv2_integration.eks_backend[0].id}"
+
+  authorizer_id      = aws_apigatewayv2_authorizer.this.id
+  authorization_type = "CUSTOM"
+}
+
+# =========================
+# 9️⃣ Rotas protegidas (EKS) - ms-payment
+# =========================
+resource "aws_apigatewayv2_route" "payment_routes" {
+  for_each = var.eks_alb_dns_name != "" ? {
+    "GET /payment/{orderId}" = "Busca pagamento por orderId"
+  } : {}
+
+  api_id    = aws_apigatewayv2_api.this.id
+  route_key = each.key
+  target    = "integrations/${aws_apigatewayv2_integration.eks_backend[0].id}"
+
+  authorizer_id      = aws_apigatewayv2_authorizer.this.id
+  authorization_type = "CUSTOM"
+}
+
+# =========================
+# 🔟 Stage
 # =========================
 resource "aws_apigatewayv2_stage" "this" {
   api_id      = aws_apigatewayv2_api.this.id
@@ -97,7 +142,7 @@ resource "aws_apigatewayv2_stage" "this" {
 }
 
 # =========================
-# 8️⃣ Permissões Lambda
+# 1️⃣1️⃣ Permissões Lambda
 # =========================
 resource "aws_lambda_permission" "allow_invoke" {
   for_each = {
