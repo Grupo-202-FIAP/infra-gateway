@@ -79,7 +79,7 @@ resource "aws_apigatewayv2_integration" "eks_backend" {
 }
 
 # =========================
-# 7️⃣ Rotas protegidas (EKS) - ms-production
+# 7️⃣ Rotas públicas (EKS) - ms-production
 # =========================
 resource "aws_apigatewayv2_route" "production_routes" {
   for_each = var.eks_alb_dns_name != "" ? {
@@ -92,12 +92,11 @@ resource "aws_apigatewayv2_route" "production_routes" {
   route_key = each.key
   target    = "integrations/${aws_apigatewayv2_integration.eks_backend[0].id}"
 
-  authorizer_id      = aws_apigatewayv2_authorizer.this.id
-  authorization_type = "CUSTOM"
+  authorization_type = "NONE"
 }
 
 # =========================
-# 8️⃣ Rotas protegidas (EKS) - ms-order
+# 8️⃣ Rotas públicas (EKS) - ms-order
 # =========================
 resource "aws_apigatewayv2_route" "order_routes" {
   for_each = var.eks_alb_dns_name != "" ? {
@@ -112,12 +111,11 @@ resource "aws_apigatewayv2_route" "order_routes" {
   route_key = each.key
   target    = "integrations/${aws_apigatewayv2_integration.eks_backend[0].id}"
 
-  authorizer_id      = aws_apigatewayv2_authorizer.this.id
-  authorization_type = "CUSTOM"
+  authorization_type = "NONE"
 }
 
 # =========================
-# 9️⃣ Rotas protegidas (EKS) - ms-payment
+# 9️⃣ Rotas públicas (EKS) - ms-payment
 # =========================
 resource "aws_apigatewayv2_route" "payment_routes" {
   for_each = var.eks_alb_dns_name != "" ? {
@@ -128,8 +126,7 @@ resource "aws_apigatewayv2_route" "payment_routes" {
   route_key = each.key
   target    = "integrations/${aws_apigatewayv2_integration.eks_backend[0].id}"
 
-  authorizer_id      = aws_apigatewayv2_authorizer.this.id
-  authorization_type = "CUSTOM"
+  authorization_type = "NONE"
 }
 
 # =========================
