@@ -149,5 +149,9 @@ resource "aws_lambda_permission" "allow_invoke" {
   action        = "lambda:InvokeFunction"
   function_name = each.value
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.this.execution_arn}/*/*"
+  source_arn    = "${aws_apigatewayv2_api.this.execution_arn}/${aws_apigatewayv2_stage.this.name}/*/*"
+  
+  depends_on = [
+    aws_apigatewayv2_stage.this
+  ]
 }
