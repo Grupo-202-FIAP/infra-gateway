@@ -18,11 +18,11 @@ variable "stage_name" {
   default     = "dev"
 }
 
-# variable "eks_alb_dns_name" {
-#   type        = string
-#   description = "DNS do ALB que faz proxy para o backend no EKS"
-#   default     = ""
-# }
+variable "eks_alb_dns_name" {
+  type        = string
+  description = "DNS do ALB que faz proxy para o backend no EKS"
+  default     = ""
+}
 
 variable "lambda_authorizer_function_name" {
   type        = string

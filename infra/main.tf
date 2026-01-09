@@ -13,5 +13,5 @@ module "api_gateway" {
   lambda_registration_invoke_arn    = data.terraform_remote_state.lambda.outputs.lambda_registration_invoke_arn
 
   # Backend EKS
-  # eks_alb_dns_name = var.eks_alb_dns_name
+  eks_alb_dns_name = var.eks_alb_dns_name
 }
