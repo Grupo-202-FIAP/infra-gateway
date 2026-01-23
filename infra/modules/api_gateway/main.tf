@@ -63,68 +63,87 @@ resource "aws_apigatewayv2_route" "public_routes" {
 # 6️⃣ Integração HTTP com ALB do EKS
 # =========================
 resource "aws_apigatewayv2_integration" "eks_backend" {
-  api_id           = aws_apigatewayv2_api.this.id
-  integration_type = "HTTP_PROXY"
-  integration_uri  = var.eks_alb_dns_name != "" ? "http://${var.eks_alb_dns_name}" : "http://placeholder.eks.alb"
+  count = var.eks_alb_dns_name != "" ? 1 : 0
+
+  api_id             = aws_apigatewayv2_api.this.id
+  integration_type   = "HTTP_PROXY"
+  integration_uri    = "http://${var.eks_alb_dns_name}/{proxy}"
   integration_method = "ANY"
   
   connection_type = "INTERNET"
   
   # Preserva o path e query string original
   request_parameters = {
-    "overwrite:path" = "$request.path"
+    "append:path" = "$request.path"
   }
+  
+  payload_format_version = "1.0"
 }
 
 # =========================
 # 7️⃣ Rotas públicas (EKS) - ms-production
 # =========================
 resource "aws_apigatewayv2_route" "production_routes" {
-  for_each = {
+  for_each = var.eks_alb_dns_name != "" ? {
     "GET /order"                    = "Lista pedidos de produção"
     "PUT /order/{orderId}/complete" = "Completa pedido"
     "PUT /order/{orderId}/ready"    = "Marca pedido como pronto"
-  }
+  } : {}
 
   api_id    = aws_apigatewayv2_api.this.id
   route_key = each.key
-  target    = "integrations/${aws_apigatewayv2_integration.eks_backend.id}"
+  target    = "integrations/${aws_apigatewayv2_integration.eks_backend[0].id}"
 
   authorization_type = "NONE"
+  
+  depends_on = [
+    aws_apigatewayv2_integration.eks_backend,
+    aws_apigatewayv2_stage.this
+  ]
 }
 
 # =========================
 # 8️⃣ Rotas públicas (EKS) - ms-order
 # =========================
 resource "aws_apigatewayv2_route" "order_routes" {
-  for_each = {
+  for_each = var.eks_alb_dns_name != "" ? {
     "POST /api/order/create" = "Cria novo pedido"
     "GET /api/order"         = "Lista todos os pedidos"
     "GET /api/order/status"  = "Lista pedidos por status"
     "GET /api/event/filter"  = "Busca evento por filtros"
     "GET /api/event/all"     = "Lista todos os eventos"
-  }
+  } : {}
 
   api_id    = aws_apigatewayv2_api.this.id
   route_key = each.key
-  target    = "integrations/${aws_apigatewayv2_integration.eks_backend.id}"
+  target    = "integrations/${aws_apigatewayv2_integration.eks_backend[0].id}"
 
   authorization_type = "NONE"
+  
+  depends_on = [
+    aws_apigatewayv2_integration.eks_backend,
+    aws_apigatewayv2_stage.this
+  ]
 }
 
 # =========================
 # 9️⃣ Rotas públicas (EKS) - ms-payment
 # =========================
 resource "aws_apigatewayv2_route" "payment_routes" {
-  for_each = {
+  for_each = var.eks_alb_dns_name != "" ? {
     "GET /payment/{orderId}" = "Busca pagamento por orderId"
-  }
+  } : {}
 
   api_id    = aws_apigatewayv2_api.this.id
   route_key = each.key
-  target    = "integrations/${aws_apigatewayv2_integration.eks_backend.id}"
+  target    = "integrations/${aws_apigatewayv2_integration.eks_backend[0].id}"
 
   authorization_type = "NONE"
+  
+  depends_on = [
+    aws_apigatewayv2_integration.eks_backend,
+    aws_apigatewayv2_stage.this
+  ]
 }
 
 # =========================
