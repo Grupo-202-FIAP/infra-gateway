@@ -28,3 +28,12 @@ output "authorizer_id" {
   value       = aws_apigatewayv2_authorizer.this.id
 }
 
+output "eks_integration_enabled" {
+  description = "Indica se a integração com EKS está ativa"
+  value       = var.eks_alb_dns_name != "" ? true : false
+}
+
+output "eks_integration_id" {
+  description = "ID da integração com EKS (se ativa)"
+  value       = var.eks_alb_dns_name != "" ? aws_apigatewayv2_integration.eks_backend[0].id : "N/A - Configure eks_alb_dns_name"
+}
